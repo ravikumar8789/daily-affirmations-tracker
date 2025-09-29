@@ -498,4 +498,15 @@
         async function getToken() {
             // In a real implementation, this would be handled securely via GitHub Actions
             // For demo purposes, we'll store it in localStorage
-            let token = localStorage.getItem('github_toke
+            let token = localStorage.getItem('github_token');
+            if (!token) {
+                token = prompt('Enter your GitHub Personal Access Token:');
+                if (token) {
+                    localStorage.setItem('github_token', token);
+                }
+            }
+            return token;
+        }
+    </script>
+</body>
+</html>
