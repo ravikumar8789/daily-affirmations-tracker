@@ -469,44 +469,250 @@
                 input.value = '';
             });
             
-            // Uncheck all checkboxes
-            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-        }
+<script>
+    // Configuration - UPDATE THESE!
+    const GITHUB_USERNAME = 'YOUR_GITHUB_USERNAME';  // Replace with your GitHub username
+    const REPO_NAME = 'YOUR_REPO_NAME';              // Replace with your repository name
+    const DATA_FILE_PATH = 'data/entries.json';
+    
+    // Set today's date as default
+    document.getElementById('datePicker').valueAsDate = new Date();
+    
+    // Load existing data when date changes
+    document.getElementById('datePicker').addEventListener('change', loadDateData);
+    
+    // Load data for today on page load
+    window.addEventListener('load', loadDateData);
+    
+    async function loadDateData() {
+        const date = document.getElementById('datePicker').value;
+        if (!date) return;
         
-        function showStatus(message, type) {
-            const statusEl = document.getElementById('statusMessage');
-            statusEl.textContent = message;
-            statusEl.className = 'status-message ' + type;
+        showStatus('Loading...', 'loading');
+        
+        try {
+            const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${DATA_FILE_PATH}`);
             
-            if (type !== 'loading') {
-                setTimeout(() => {
-                    statusEl.textContent = '';
-                    statusEl.className = 'status-message';
-                }, 5000);
+            if (response.ok) {
+                const fileData = await response.json();
+                const content = JSON.parse(atob(fileData.content));
+                
+                if (content[date]) {
+                    const data = content[date];
+                    // Populate all fields
+                    document.getElementById('affirmations').value = data.affirmations || '';
+                    
+                    // Populate priorities
+                    for (let i = 1; i <= 6; i++) {
+                        document.getElementById(`priority${i}`).value = data.priorities?.[i-1] || '';
+                    }
+                    
+                    // Populate gratitude
+                    for (let i = 1; i <= 6; i++) {
+                        document.getElementById(`grateful${i}`).value = data.gratitude?.[i-1] || '';
+                    }
+                    
+                    // Populate meals
+                    document.getElementById('breakfast').value = data.meals?.breakfast || '';
+                    document.getElementById('lunch').value = data.meals?.lunch || '';
+                    document.getElementById('dinner').value = data.meals?.dinner || '';
+                    document.getElementById('water').value = data.water || '';
+                    
+                    // Populate self-care checkboxes
+                    for (let i = 1; i <= 9; i++) {
+                        document.getElementById(`care${i}`).checked = data.self_care?.includes(i) || false;
+                    }
+                    
+                    document.getElementById('notes').value = data.notes || '';
+                    document.getElementById('sleep').value = data.sleep || '';
+                    
+                    showStatus('Data loaded successfully!', 'success');
+                } else {
+                    clearForm();
+                    showStatus('New day - ready for your entries!', 'success');
+                }
+            } else {
+                clearForm();
+                showStatus('New day - ready for your entries!', 'success');
             }
+        } catch (error) {
+            console.error('Error loading data:', error);
+            showStatus('Starting fresh for today!', 'success');
+        }
+    }
+    
+    async function saveData() {
+        const date = document.getElementById('datePicker').value;
+        if (!date) {
+            showStatus('Please select a date!', 'error');
+            return;
         }
         
-        function viewHistory() {
-            alert('History feature would show your previous entries. This would require a separate history page.');
-            // For a complete solution, we'd create history.html
-        }
+        showStatus('Saving to GitHub...', 'loading');
         
-        // This is a placeholder - in a real implementation, you'd use GitHub Actions
-        // to securely handle the token. For now, we'll use a prompt for demo purposes.
-        async function getToken() {
-            // In a real implementation, this would be handled securely via GitHub Actions
-            // For demo purposes, we'll store it in localStorage
-            let token = localStorage.getItem('github_token');
+        try {
+            // Get GitHub token
+            const token = await getToken();
             if (!token) {
-                token = prompt('Enter your GitHub Personal Access Token:');
-                if (token) {
-                    localStorage.setItem('github_token', token);
+                showStatus('GitHub token is required to save data', 'error');
+                return;
+            }
+            
+            // Get current file to get SHA (required for updates)
+            let sha = null;
+            let existingContent = {};
+            
+            try {
+                const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${DATA_FILE_PATH}`, {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (getResponse.ok) {
+                    const fileData = await getResponse.json();
+                    sha = fileData.sha;
+                    existingContent = JSON.parse(atob(fileData.content));
+                }
+            } catch (error) {
+                // File doesn't exist yet, that's fine - we'll create it
+                console.log('Creating new data file...');
+            }
+            
+            // Collect self-care activities (checkbox indices)
+            const selfCare = [];
+            for (let i = 1; i <= 9; i++) {
+                if (document.getElementById(`care${i}`).checked) {
+                    selfCare.push(i);
                 }
             }
-            return token;
+            
+            // Collect priorities
+            const priorities = [];
+            for (let i = 1; i <= 6; i++) {
+                const value = document.getElementById(`priority${i}`).value.trim();
+                priorities.push(value);
+            }
+            
+            // Collect gratitude
+            const gratitude = [];
+            for (let i = 1; i <= 6; i++) {
+                const value = document.getElementById(`grateful${i}`).value.trim();
+                gratitude.push(value);
+            }
+            
+            // Prepare new data
+            const newData = {
+                affirmations: document.getElementById('affirmations').value,
+                priorities: priorities,
+                gratitude: gratitude,
+                meals: {
+                    breakfast: document.getElementById('breakfast').value,
+                    lunch: document.getElementById('lunch').value,
+                    dinner: document.getElementById('dinner').value
+                },
+                water: document.getElementById('water').value,
+                self_care: selfCare,
+                notes: document.getElementById('notes').value,
+                sleep: document.getElementById('sleep').value,
+                last_updated: new Date().toISOString()
+            };
+            
+            // Update existing content with new data
+            existingContent[date] = newData;
+            
+            // Convert to base64
+            const contentEncoded = btoa(JSON.stringify(existingContent, null, 2));
+            
+            // Create or update file
+            const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${DATA_FILE_PATH}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify({
+                    message: `Update affirmations for ${date}`,
+                    content: contentEncoded,
+                    sha: sha
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showStatus('Successfully saved to GitHub!', 'success');
+                console.log('Save successful:', result);
+            } else {
+                throw new Error(result.message || `HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+        } catch (error) {
+            console.error('Error saving data:', error);
+            showStatus(`Error: ${error.message}`, 'error');
         }
-    </script>
+    }
+    
+    function clearForm() {
+        // Clear all inputs
+        document.querySelectorAll('textarea, input[type="text"]').forEach(input => {
+            input.value = '';
+        });
+        
+        // Uncheck all checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+    }
+    
+    function showStatus(message, type) {
+        const statusEl = document.getElementById('statusMessage');
+        statusEl.textContent = message;
+        statusEl.className = 'status-message ' + type;
+        
+        if (type !== 'loading') {
+            setTimeout(() => {
+                statusEl.textContent = '';
+                statusEl.className = 'status-message';
+            }, 5000);
+        }
+    }
+    
+    function viewHistory() {
+        // Simple history view - show alert with basic info
+        const date = document.getElementById('datePicker').value;
+        alert(`History feature would show all your previous entries.\n\nFor now, you can change the date to view different days.\n\nCurrent date: ${date}\n\nA full history page would list all your saved dates.`);
+    }
+    
+    // Token management
+    async function getToken() {
+        // Check if token is already stored
+        let token = localStorage.getItem('github_token');
+        
+        if (!token) {
+            // Prompt user for token
+            token = prompt(`Please enter your GitHub Personal Access Token:\n\n1. Go to GitHub Settings → Developer settings → Personal access tokens\n2. Generate a new token with "repo" permissions\n3. Paste it here:`);
+            
+            if (token) {
+                // Store token securely in localStorage
+                localStorage.setItem('github_token', token);
+                showStatus('Token saved successfully!', 'success');
+            }
+        }
+        
+        return token;
+    }
+    
+    // Add clear token function for debugging
+    function clearToken() {
+        localStorage.removeItem('github_token');
+        showStatus('Token cleared. You will be prompted for a new token on next save.', 'success');
+    }
+    
+    // Add this to your HTML temporarily for debugging:
+    // <button onclick="clearToken()" style="margin: 10px;">Clear Token (Debug)</button>
+</script>
 </body>
 </html>
