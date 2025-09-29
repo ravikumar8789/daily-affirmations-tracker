@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Affirmations Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .date-section {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .date-input {
+            background: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            color: #333;
+            width: 200px;
+            text-align: center;
+        }
+        
+        .main-content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 1.3em;
+            color: #4facfe;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #4facfe;
+            font-weight: 600;
+        }
+        
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 1em;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        .affirmations-box {
+            min-height: 120px;
+        }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .priority-item, .gratitude-item {
+            margin-bottom: 10px;
+        }
+        
+        .meals-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .meal-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #4facfe;
+        }
+        
+        .meal-title {
+            font-weight: 600;
+            color: #4facfe;
+            margin-bottom: 8px;
+        }
+        
+        .self-care-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .self-care-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .self-care-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .actions {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 0 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .status-message {
+            text-align: center;
+            padding: 10px;
+            font-weight: 600;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .loading { background: #fff3cd; color: #856404; }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+            
+            .grid-2, .meals-grid, .self-care-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DAILY AFFIRMATIONS</h1>
+            <div class="date-section">
+                <input type="date" id="datePicker" class="date-input">
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <!-- Left Column -->
+            <div class="left-column">
+                <div class="section">
+                    <div class="section-title">AFFIRMATIONS FOR TODAY</div>
+                    <textarea id="affirmations" class="affirmations-box" placeholder="Write your daily affirmations here..."></textarea>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">TOP 6 PRIORITIES</div>
+                    <div class="priorities-list">
+                        <input type="text" id="priority1" class="priority-item" placeholder="Priority 1">
+                        <input type="text" id="priority2" class="priority-item" placeholder="Priority 2">
+                        <input type="text" id="priority3" class="priority-item" placeholder="Priority 3">
+                        <input type="text" id="priority4" class="priority-item" placeholder="Priority 4">
+                        <input type="text" id="priority5" class="priority-item" placeholder="Priority 5">
+                        <input type="text" id="priority6" class="priority-item" placeholder="Priority 6">
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">6 THINGS I'M GRATEFUL FOR</div>
+                    <div class="gratitude-list">
+                        <input type="text" id="grateful1" class="gratitude-item" placeholder="Thing 1">
+                        <input type="text" id="grateful2" class="gratitude-item" placeholder="Thing 2">
+                        <input type="text" id="grateful3" class="gratitude-item" placeholder="Thing 3">
+                        <input type="text" id="grateful4" class="gratitude-item" placeholder="Thing 4">
+                        <input type="text" id="grateful5" class="gratitude-item" placeholder="Thing 5">
+                        <input type="text" id="grateful6" class="gratitude-item" placeholder="Thing 6">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="right-column">
+                <div class="section">
+                    <div class="section-title">MEALS</div>
+                    <div class="meals-grid">
+                        <div class="meal-section">
+                            <div class="meal-title">BREAKFAST</div>
+                            <input type="text" id="breakfast" placeholder="What did you eat?">
+                        </div>
+                        <div class="meal-section">
+                            <div class="meal-title">LUNCH</div>
+                            <input type="text" id="lunch" placeholder="What did you eat?">
+                        </div>
+                        <div class="meal-section">
+                            <div class="meal-title">DINNER</div>
+                            <input type="text" id="dinner" placeholder="What did you eat?">
+                        </div>
+                        <div class="meal-section">
+                            <div class="meal-title">WATER</div>
+                            <input type="text" id="water" placeholder="Glasses consumed">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">SELF CARE ACTIVITIES</div>
+                    <div class="self-care-grid">
+                        <label class="self-care-item"><input type="checkbox" id="care1"> Listen to a podcast</label>
+                        <label class="self-care-item"><input type="checkbox" id="care2"> Get up early</label>
+                        <label class="self-care-item"><input type="checkbox" id="care3"> Take a moment</label>
+                        <label class="self-care-item"><input type="checkbox" id="care4"> Get fresh air</label>
+                        <label class="self-care-item"><input type="checkbox" id="care5"> Cut down screen time</label>
+                        <label class="self-care-item"><input type="checkbox" id="care6"> Learn something new</label>
+                        <label class="self-care-item"><input type="checkbox" id="care7"> Read a book</label>
+                        <label class="self-care-item"><input type="checkbox" id="care8"> Eat well & exercise</label>
+                        <label class="self-care-item"><input type="checkbox" id="care9"> Take a shower or bath</label>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">IMPORTANT NOTES FOR TOMORROW</div>
+                    <textarea id="notes" placeholder="Notes for tomorrow..." rows="3"></textarea>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">SLEEP</div>
+                    <input type="text" id="sleep" placeholder="Hours of sleep" style="width: 200px;">
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="actions">
+                <button class="btn" onclick="saveData()">Save to GitHub</button>
+                <button class="btn btn-secondary" onclick="viewHistory()">View History</button>
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - UPDATE THESE!
+        const GITHUB_USERNAME = 'ravikumar8789';  // Replace with your GitHub username
+        const REPO_NAME = 'daily-affirmations-tracker';              // Replace with your repository name
+        const DATA_FILE_PATH = 'data/entries.json';
+        
+        // Set today's date as default
+        document.getElementById('datePicker').valueAsDate = new Date();
+        
+        // Load existing data when date changes
+        document.getElementById('datePicker').addEventListener('change', loadDateData);
+        
+        // Load data for today on page load
+        window.addEventListener('load', loadDateData);
+        
+        async function loadDateData() {
+            const date = document.getElementById('datePicker').value;
+            if (!date) return;
+            
+            showStatus('Loading...', 'loading');
+            
+            try {
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${DATA_FILE_PATH}`);
+                
+                if (response.ok) {
+                    const fileData = await response.json();
+                    const content = JSON.parse(atob(fileData.content));
+                    
+                    if (content[date]) {
+                        const data = content[date];
+                        // Populate all fields
+                        document.getElementById('affirmations').value = data.affirmations || '';
+                        
+                        // Populate priorities
+                        for (let i = 1; i <= 6; i++) {
+                            document.getElementById(`priority${i}`).value = data.priorities?.[i-1] || '';
+                        }
+                        
+                        // Populate gratitude
+                        for (let i = 1; i <= 6; i++) {
+                            document.getElementById(`grateful${i}`).value = data.gratitude?.[i-1] || '';
+                        }
+                        
+                        // Populate meals
+                        document.getElementById('breakfast').value = data.meals?.breakfast || '';
+                        document.getElementById('lunch').value = data.meals?.lunch || '';
+                        document.getElementById('dinner').value = data.meals?.dinner || '';
+                        document.getElementById('water').value = data.water || '';
+                        
+                        // Populate self-care checkboxes
+                        for (let i = 1; i <= 9; i++) {
+                            document.getElementById(`care${i}`).checked = data.self_care?.includes(i) || false;
+                        }
+                        
+                        document.getElementById('notes').value = data.notes || '';
+                        document.getElementById('sleep').value = data.sleep || '';
+                        
+                        showStatus('Data loaded successfully!', 'success');
+                    } else {
+                        clearForm();
+                        showStatus('New day - ready for your entries!', 'success');
+                    }
+                } else {
+                    clearForm();
+                    showStatus('New day - ready for your entries!', 'success');
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showStatus('Starting fresh for today!', 'success');
+            }
+        }
+        
+        async function saveData() {
+            const date = document.getElementById('datePicker').value;
+            if (!date) {
+                showStatus('Please select a date!', 'error');
+                return;
+            }
+            
+            showStatus('Saving to GitHub...', 'loading');
+            
+            try {
+                // Get current file to get SHA (required for updates)
+                let sha = null;
+                let existingContent = {};
+                
+                try {
+                    const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${DATA_FILE_PATH}`);
+                    if (getResponse.ok) {
+                        const fileData = await getResponse.json();
+                        sha = fileData.sha;
+                        existingContent = JSON.parse(atob(fileData.content));
+                    }
+                } catch (error) {
+                    // File doesn't exist yet, that's fine
+                }
+                
+                // Collect self-care activities (checkbox indices)
+                const selfCare = [];
+                for (let i = 1; i <= 9; i++) {
+                    if (document.getElementById(`care${i}`).checked) {
+                        selfCare.push(i);
+                    }
+                }
+                
+                // Collect priorities
+                const priorities = [];
+                for (let i = 1; i <= 6; i++) {
+                    const value = document.getElementById(`priority${i}`).value.trim();
+                    if (value) priorities.push(value);
+                }
+                
+                // Collect gratitude
+                const gratitude = [];
+                for (let i = 1; i <= 6; i++) {
+                    const value = document.getElementById(`grateful${i}`).value.trim();
+                    if (value) gratitude.push(value);
+                }
+                
+                // Prepare new data
+                const newData = {
+                    affirmations: document.getElementById('affirmations').value,
+                    priorities: priorities,
+                    gratitude: gratitude,
+                    meals: {
+                        breakfast: document.getElementById('breakfast').value,
+                        lunch: document.getElementById('lunch').value,
+                        dinner: document.getElementById('dinner').value
+                    },
+                    water: document.getElementById('water').value,
+                    self_care: selfCare,
+                    notes: document.getElementById('notes').value,
+                    sleep: document.getElementById('sleep').value
+                };
+                
+                // Update existing content with new data
+                existingContent[date] = newData;
+                
+                // Convert to base64
+                const contentEncoded = btoa(JSON.stringify(existingContent, null, 2));
+                
+                // Create or update file
+                const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${REPO_NAME}/contents/${DATA_FILE_PATH}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${await getToken()}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `Update affirmations for ${date}`,
+                        content: contentEncoded,
+                        sha: sha
+                    })
+                });
+                
+                if (response.ok) {
+                    showStatus('Successfully saved to GitHub!', 'success');
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.message);
+                }
+                
+            } catch (error) {
+                console.error('Error saving data:', error);
+                showStatus(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function clearForm() {
+            // Clear all inputs
+            document.querySelectorAll('textarea, input[type="text"]').forEach(input => {
+                input.value = '';
+            });
+            
+            // Uncheck all checkboxes
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+        
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = 'status-message ' + type;
+            
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    statusEl.textContent = '';
+                    statusEl.className = 'status-message';
+                }, 5000);
+            }
+        }
+        
+        function viewHistory() {
+            alert('History feature would show your previous entries. This would require a separate history page.');
+            // For a complete solution, we'd create history.html
+        }
+        
+        // This is a placeholder - in a real implementation, you'd use GitHub Actions
+        // to securely handle the token. For now, we'll use a prompt for demo purposes.
+        async function getToken() {
+            // In a real implementation, this would be handled securely via GitHub Actions
+            // For demo purposes, we'll store it in localStorage
+            let token = localStorage.getItem('github_toke
